@@ -19,6 +19,18 @@ RUN pnpm --filter @paperclipai/plugin-sdk build
 RUN pnpm --filter @paperclipai/server build
 RUN test -f server/dist/index.js
 
+# Patch (upstream Issue #6344): @paperclipai/adapter-openclaw-gateway hardcodes
+# PROTOCOL_VERSION=3, but OpenClaw 2026.5.18+ requires protocol 4. Bump it so
+# Paperclip can connect to our OpenClaw 2026.5.20 gateway (and the Hermes WS
+# adapter, which speaks the same gateway protocol). Safe here: we only run the
+# newer OpenClaw, so dropping v3 backward-compat costs us nothing.
+RUN set -e; \
+    echo "Patching openclaw-gateway PROTOCOL_VERSION 3->4 (Issue #6344)..."; \
+    F="$(grep -rl 'PROTOCOL_VERSION = 3' /paperclip 2>/dev/null || true)"; \
+    if [ -z "$F" ]; then echo "ERROR: 'PROTOCOL_VERSION = 3' not found — adapter changed; re-check patch"; exit 1; fi; \
+    echo "$F" | xargs sed -i 's/PROTOCOL_VERSION = 3/PROTOCOL_VERSION = 4/g'; \
+    echo "Patched PROTOCOL_VERSION 3->4 in:"; echo "$F"
+
 # Runtime image (direct Paperclip server, no wrapper).
 FROM node:22-bookworm
 ENV NODE_ENV=production
