@@ -6,7 +6,7 @@
 
 **3 camadas:** 🎩 **Paperclip** = orquestra/governança (org chart, empresas, papéis, orçamento). 🤖 **OpenClaw** + **Hermes** = runtimes que EXECUTAM (canais, skills, raciocínio). 🎥 **Claw3D** = visualizador 3D + chat + console de gestão.
 
-**Multi-empresa:** **1 Paperclip central** (multi-company nativo) + **por empresa**: OpenClaw + Hermes (+ Hermes-Adapter) + Claw3D.
+**Multi-empresa:** **1 Paperclip central** (multi-company nativo) + **por empresa**: OpenClaw + Hermes (+ Hermes-Adapter) + Claw3D. **Empresas com stack provisionado: Ayni** (1ª; + ponte IG) **e Vivero** (2ª; SEM ponte IG por ora — ver §7). Eduzz/Infinitum = depois.
 
 **Protocolo do gateway = 4** em TODOS (a "saga" foi resolver isso). Não reverter os patches 3→4.
 
@@ -67,3 +67,18 @@ Locais: `/Users/thiagoberto/{openclaw-railway,hermes-agent-template,Claw3D,paper
 
 ## 6. Memória auxiliar (histórico detalhado)
 Em `~/.claude/projects/-Users-thiagoberto-Soundzz/memory/`: `project_vivero_ai_plataforma_multiagente`, `project_paperclip_internals_agentes_modelos`, `project_vivero_atualizacao_4componentes_2026_06_15`, `project_openclaw_railway_instagram_secretario`. Este CLAUDE.md é o índice mestre; os memory files têm o passo-a-passo histórico.
+
+## 7. Stack do VIVERO (provisionado 2026-06-15)
+
+Segunda empresa com stack próprio (mesmos 4 repos, env próprio, **tokens NOVOS por empresa** — não reusa os do Ayni; **DeepSeek = MESMA chave**). **Sem ponte de Instagram por ora** (deixar pronto pro futuro = subir um `Instagram Bridge - Vivero` igual ao do Ayni quando houver conta IG/tokens Meta do Vivero).
+
+| Serviço (Railway) | ID | Repo | Domínio interno | Notas |
+|---|---|---|---|---|
+| OpenClaw Vivero | `4c79cb61` | openclaw-railway | `openclaw-vivero.railway.internal` | `OPENCLAW_GATEWAY_TOKEN`(novo)=`CLAW3D_GATEWAY_TOKEN` do Claw3D Vivero; `OPENCLAW_VERSION=2026.6.6`; vol `/data`. ⚠️ **precisa ONBOARDING** (volume vazio → sem agente até configurar; ver saga DeepSeek do OpenClaw) |
+| Hermes Vivero | `d4a74f2d` | hermes-agent-template | `hermes-vivero.railway.internal` | api_server `8643`+`::`+`API_SERVER_KEY`(novo); `PORT=8642`; **model auth via env** `DEEPSEEK_API_KEY`+`LLM_MODEL=deepseek/deepseek-v4-pro` (wrapper semeia `auth.json` no boot); `ADMIN_USERNAME=thiago@vivero.org.br`; vol `/data` |
+| Hermes Adapter Vivero | `927dd9dd` | Claw3D (`START_MODE=hermes-adapter`) | `hermes-adapter-vivero.railway.internal` | `HERMES_API_URL=http://hermes-vivero.railway.internal:8643`; `HERMES_API_KEY`=API_SERVER_KEY do Hermes Vivero |
+| Claw3D Vivero | `d02544ab` | Claw3D (Studio) | — (público `claw3d-vivero-production.up.railway.app`) | `CLAW3D_GATEWAY_URL=ws://openclaw-vivero.railway.internal:8080`; `CLAW3D_GATEWAY_TOKEN`=gateway token do Vivero; `STUDIO_ACCESS_TOKEN`(novo); `UPSTREAM_ALLOWLIST=openclaw-vivero.railway.internal,hermes-adapter-vivero.railway.internal` |
+
+**Tokens do Vivero** (gerados novos, guardados nas Railway Variables de cada serviço; backup local efêmero `/tmp/vivero.env`): gateway (OpenClaw=Claw3D), wrapper admin (OpenClaw), Hermes api_server key (Hermes=Adapter), Hermes admin pass, studio access (Claw3D).
+
+**Follow-ups p/ "pronto pra uso" (config, não estrutura):** (1) **OpenClaw Vivero onboarding** (criar agente + DeepSeek — interativo, igual saga Ayni); (2) Hermes Vivero: parear WhatsApp/Telegram se quiser canais nativos; (3) Claw3D Vivero: conectar no gateway via Studio UI (cookie `studio_access`); (4) **conectar no Paperclip CENTRAL** (empresa Vivero + agentes via invite/tile); (5) **persona do agente Vivero** (genérica aplicada como ponto de partida — refinar). Estrutura/cabeamento = FEITO; esses são passos de configuração.
