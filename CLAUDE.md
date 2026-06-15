@@ -10,13 +10,13 @@
 
 **Protocolo do gateway = 4** em TODOS (a "saga" foi resolver isso). Não reverter os patches 3→4.
 
-**4 repos** (forks em `github.com/escoladesolucoes/`), MESMOS repos → N conjuntos de serviços Railway (diferença = env + volumes):
-- `openclaw-railway` → serviço OpenClaw (wrapper + ponte Instagram custom)
-- `hermes-agent-template` → serviço Hermes (NousResearch/hermes-agent, canais nativos)
-- `Claw3D` → serve DOIS papéis via `START_MODE`: Claw3D Studio (visualizador) **e** Hermes-Adapter (`START_MODE=hermes-adapter`, traduz HTTP do Hermes ↔ protocolo gateway)
-- `paperclip-railway-template` → Paperclip (1 só, builda paperclipai/paperclip no `PAPERCLIP_REF` + patches no Dockerfile)
+**4 repos** (forks em `github.com/escoladesolucoes/`, **renomeados `viveroai-*` em 2026-06-15**), MESMOS repos → N conjuntos de serviços Railway (diferença = env + volumes):
+- `viveroai-openclaw` (ex-`openclaw-railway`) → serviço OpenClaw (wrapper + ponte Instagram custom)
+- `viveroai-hermes` (ex-`hermes-agent-template`) → serviço Hermes (NousResearch/hermes-agent, canais nativos)
+- `viveroai-claw3d` (ex-`Claw3D`) → serve DOIS papéis via `START_MODE`: Claw3D Studio (visualizador) **e** Hermes-Adapter (`START_MODE=hermes-adapter`, traduz HTTP do Hermes ↔ protocolo gateway)
+- `viveroai-paperclip` (ex-`paperclip-railway-template`) → Paperclip (1 só, builda paperclipai/paperclip no `PAPERCLIP_REF` + patches no Dockerfile)
 
-Locais: `/Users/thiagoberto/{openclaw-railway,hermes-agent-template,Claw3D,paperclip-railway-template}`. Railway: projeto **Vivero AI** (CLI logado como Escola de Soluções).
+Locais: `/Users/thiagoberto/{viveroai-openclaw,viveroai-hermes,viveroai-claw3d,viveroai-paperclip}`. Railway: projeto **Vivero AI** (CLI logado como Escola de Soluções). GitHub mantém redirect dos nomes antigos; Railway linka por ID do repo (sobrevive ao rename).
 
 ## 2. Conceitos-chave (não esquecer)
 
@@ -55,7 +55,7 @@ Locais: `/Users/thiagoberto/{openclaw-railway,hermes-agent-template,Claw3D,paper
 
 ## 5. PENDÊNCIAS (próxima sessão)
 
-> **DECISÃO 2026-06-15 (Thiago):** **(a)** **Hermes = PADRÃO da ponte de Instagram** (não OpenClaw) — rotear a ponte p/ chamar a API HTTP do Hermes; **pré-requisito = consertar o `api_server` do Hermes (item 5, virou PRIORIDADE).** **(b)** ✅ **DEFINIDO — arquitetura FICA distribuída de vez:** **1 Paperclip CENTRAL** (atende TODAS as empresas, multi-company nativo) + **por empresa: 1 OpenClaw + 1 Claw3D + 1 Hermes** (+ Hermes-Adapter). **Co-localização do Paperclip foi DESCARTADA** (Thiago decentraliza só "mais tarde" se quiser; não é mais pendência). Isso encerra a dúvida de §1. **(c)** Renomeação de repos (convenção escolhida: `viveroai-openclaw/hermes/claw3d/paperclip`) + serviços Railway (`Função - Empresa`) = decidida mas ADIADA.
+> **DECISÃO 2026-06-15 (Thiago):** **(a)** **Hermes = PADRÃO da ponte de Instagram** (não OpenClaw) — rotear a ponte p/ chamar a API HTTP do Hermes; **pré-requisito = consertar o `api_server` do Hermes (item 5, virou PRIORIDADE).** **(b)** ✅ **DEFINIDO — arquitetura FICA distribuída de vez:** **1 Paperclip CENTRAL** (atende TODAS as empresas, multi-company nativo) + **por empresa: 1 OpenClaw + 1 Claw3D + 1 Hermes** (+ Hermes-Adapter). **Co-localização do Paperclip foi DESCARTADA** (Thiago decentraliza só "mais tarde" se quiser; não é mais pendência). Isso encerra a dúvida de §1. **(c)** ✅ **Renomeação dos REPOS FEITA 2026-06-15** (remoto via `gh repo rename` + local `mv`+`git remote set-url`): `openclaw-railway`→`viveroai-openclaw`, `hermes-agent-template`→`viveroai-hermes`, `Claw3D`→`viveroai-claw3d`, `paperclip-railway-template`→`viveroai-paperclip`. GitHub redireciona nomes antigos; Railway linka por ID (deploys preservados — verificado). **Renomeação dos SERVIÇOS Railway (`Função - Empresa`) = AINDA PENDENTE** (cosmético/seguro, separado).
 
 1. **✅ Persona do "Gestor de Redes Sociais da Ayni" FEITA 2026-06-15** — gravada em `/data/.hermes/SOUL.md` do Hermes (⚠️ SOUL.md é GLOBAL: vale IG+WhatsApp+Telegram). Backup do original em `/data/.hermes/SOUL.md.bak-20260615` (513 bytes). Persona = atendimento de redes sociais da Cidade Escola Ayni (PT-BR caloroso, sem nome próprio, NÃO se chama "SOUL"/"Hermes"; handoff p/ humano; ciente do papel de inbox). Pega na hora (sem restart). Verificado ao vivo.
 2. **✅ Skill de "inbox / quem me mandou hoje" FEITA 2026-06-15** — skill local `inbox-ayni` em `/data/.hermes/skills/inbox-ayni/` (SKILL.md + `inbox.py`). `hermes skills list` mostra `local/enabled` (dropar o dir basta no Hermes, ≠ OpenClaw). O agente roda `python3 .../inbox.py --since today|24h|7d` (terminal local), que consulta `localhost:8643/api/sessions`, filtra por canal (IG via `instagram-<igsid>`, wpp/telegram nativos), exclui sessões internas, e resume por canal com horário GMT-3 + prévia. ⚠️ **GOTCHA: o terminal do agente NÃO herda a env do gateway** → a key vem de `/data/.hermes/skills/inbox-ayni/.api_key` (chmod 600; valor=`API_SERVER_KEY`). Verificado ponta a ponta. Follow-ups: (a) IG `igsid`→nome via Graph API (precisa `IG_ACCESS_TOKEN` na env do Hermes — script já enriquece se existir); (b) **segurança: o toolset `terminal` do Hermes é GLOBAL (vale até DMs públicas do IG) → risco de prompt-injection; inbox hoje é gateado só pela persona. Endurecer (restringir terminal/inbox a canais de operador) = follow-up.**
@@ -74,10 +74,10 @@ Segunda empresa com stack próprio (mesmos 4 repos, env próprio, **tokens NOVOS
 
 | Serviço (Railway) | ID | Repo | Domínio interno | Notas |
 |---|---|---|---|---|
-| OpenClaw Vivero | `4c79cb61` | openclaw-railway | `openclaw-vivero.railway.internal` | `OPENCLAW_GATEWAY_TOKEN`(novo)=`CLAW3D_GATEWAY_TOKEN` do Claw3D Vivero; `OPENCLAW_VERSION=2026.6.6`; vol `/data`. ⚠️ **precisa ONBOARDING** (volume vazio → sem agente até configurar; ver saga DeepSeek do OpenClaw) |
-| Hermes Vivero | `d4a74f2d` | hermes-agent-template | `hermes-vivero.railway.internal` | api_server `8643`+`::`+`API_SERVER_KEY`(novo); `PORT=8642`; model auth via Railway vars `DEEPSEEK_API_KEY`+`LLM_MODEL=deepseek/deepseek-v4-pro`; `ADMIN_USERNAME=thiago@vivero.org.br`; vol `/data`. ✅ agente + persona Vivero verificados |
-| Hermes Adapter Vivero | `927dd9dd` | Claw3D (`START_MODE=hermes-adapter`) | `hermes-adapter-vivero.railway.internal` | `HERMES_API_URL=http://hermes-vivero.railway.internal:8643`; `HERMES_API_KEY`=API_SERVER_KEY do Hermes Vivero |
-| Claw3D Vivero | `d02544ab` | Claw3D (Studio) | — (público `claw3d-vivero-production.up.railway.app`) | `CLAW3D_GATEWAY_URL=ws://openclaw-vivero.railway.internal:8080`; `CLAW3D_GATEWAY_TOKEN`=gateway token do Vivero; `STUDIO_ACCESS_TOKEN`(novo); `UPSTREAM_ALLOWLIST=openclaw-vivero.railway.internal,hermes-adapter-vivero.railway.internal` |
+| OpenClaw Vivero | `4c79cb61` | viveroai-openclaw | `openclaw-vivero.railway.internal` | `OPENCLAW_GATEWAY_TOKEN`(novo)=`CLAW3D_GATEWAY_TOKEN` do Claw3D Vivero; `OPENCLAW_VERSION=2026.6.6`; vol `/data`. ⚠️ **precisa ONBOARDING** (volume vazio → sem agente até configurar; ver saga DeepSeek do OpenClaw) |
+| Hermes Vivero | `d4a74f2d` | viveroai-hermes | `hermes-vivero.railway.internal` | api_server `8643`+`::`+`API_SERVER_KEY`(novo); `PORT=8642`; model auth via Railway vars `DEEPSEEK_API_KEY`+`LLM_MODEL=deepseek/deepseek-v4-pro`; `ADMIN_USERNAME=thiago@vivero.org.br`; vol `/data`. ✅ agente + persona Vivero verificados |
+| Hermes Adapter Vivero | `927dd9dd` | viveroai-claw3d (`START_MODE=hermes-adapter`) | `hermes-adapter-vivero.railway.internal` | `HERMES_API_URL=http://hermes-vivero.railway.internal:8643`; `HERMES_API_KEY`=API_SERVER_KEY do Hermes Vivero |
+| Claw3D Vivero | `d02544ab` | viveroai-claw3d (Studio) | — (público `claw3d-vivero-production.up.railway.app`) | `CLAW3D_GATEWAY_URL=ws://openclaw-vivero.railway.internal:8080`; `CLAW3D_GATEWAY_TOKEN`=gateway token do Vivero; `STUDIO_ACCESS_TOKEN`(novo); `UPSTREAM_ALLOWLIST=openclaw-vivero.railway.internal,hermes-adapter-vivero.railway.internal` |
 
 **Tokens do Vivero** (gerados novos, guardados nas Railway Variables de cada serviço; backup local efêmero `/tmp/vivero.env`): gateway (OpenClaw=Claw3D), wrapper admin (OpenClaw), Hermes api_server key (Hermes=Adapter), Hermes admin pass, studio access (Claw3D).
 
