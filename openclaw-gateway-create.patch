@@ -1,0 +1,119 @@
+diff --git a/packages/adapter-utils/src/types.ts b/packages/adapter-utils/src/types.ts
+index 3d87f7a..3f89b96 100644
+--- a/packages/adapter-utils/src/types.ts
++++ b/packages/adapter-utils/src/types.ts
+@@ -496,6 +496,10 @@ export interface CreateConfigValues {
+   workspaceBranchTemplate?: string;
+   worktreeParentDir?: string;
+   runtimeServicesJson?: string;
++  /** openclaw_gateway create: gateway auth token (x-openclaw-token). */
++  gatewayToken?: string;
++  /** openclaw_gateway create: skip device pairing (token-only auth). */
++  disableDeviceAuth?: boolean;
+   defaultEnvironmentId?: string;
+   maxTurnsPerRun: number;
+   heartbeatEnabled: boolean;
+diff --git a/packages/adapters/openclaw-gateway/src/ui/build-config.ts b/packages/adapters/openclaw-gateway/src/ui/build-config.ts
+index 70604f2..423203e 100644
+--- a/packages/adapters/openclaw-gateway/src/ui/build-config.ts
++++ b/packages/adapters/openclaw-gateway/src/ui/build-config.ts
+@@ -26,5 +26,8 @@ export function buildOpenClawGatewayConfig(v: CreateConfigValues): Record<string
+   if (runtimeServices && Array.isArray(runtimeServices.services)) {
+     ac.workspaceRuntime = runtimeServices;
+   }
++  const token = (v.gatewayToken ?? "").trim();
++  if (token) ac.headers = { "x-openclaw-token": token };
++  if (v.disableDeviceAuth) ac.disableDeviceAuth = true;
+   return ac;
+ }
+diff --git a/ui/src/adapters/adapter-display-registry.ts b/ui/src/adapters/adapter-display-registry.ts
+index e710d07..7b22e7a 100644
+--- a/ui/src/adapters/adapter-display-registry.ts
++++ b/ui/src/adapters/adapter-display-registry.ts
+@@ -110,11 +110,8 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
+   },
+   openclaw_gateway: {
+     label: "OpenClaw Gateway",
+-    description: "External gateway adapter",
++    description: "Connect OpenClaw or remote Hermes via gateway URL + token",
+     icon: Bot,
+-    comingSoon: true,
+-    disabledLabel: "Invite external agents from the add-agent modal",
+-    hideFromVisualSelection: true,
+   },
+   process: {
+     label: "Process",
+diff --git a/ui/src/adapters/openclaw-gateway/config-fields.tsx b/ui/src/adapters/openclaw-gateway/config-fields.tsx
+index 82bff3e..0e73bd5 100644
+--- a/ui/src/adapters/openclaw-gateway/config-fields.tsx
++++ b/ui/src/adapters/openclaw-gateway/config-fields.tsx
+@@ -116,6 +116,30 @@ export function OpenClawGatewayConfigFields({
+         />
+       </Field>
+ 
++      {isCreate && (
++        <>
++          <Field label="Gateway auth token (x-openclaw-token)">
++            <DraftInput
++              value={values!.gatewayToken ?? ""}
++              onCommit={(v) => set!({ gatewayToken: v.trim() })}
++              immediate
++              className={inputClass}
++              placeholder="OpenClaw gateway token"
++            />
++          </Field>
++          <Field label="Token-only auth (skip device pairing)">
++            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
++              <input
++                type="checkbox"
++                checked={values!.disableDeviceAuth ?? true}
++                onChange={(e) => set!({ disableDeviceAuth: e.target.checked })}
++              />
++              Recommended for OpenClaw / remote Hermes gateways
++            </label>
++          </Field>
++        </>
++      )}
++
+       <PayloadTemplateJsonField
+         isCreate={isCreate}
+         values={values}
+diff --git a/ui/src/components/AgentConfigForm.tsx b/ui/src/components/AgentConfigForm.tsx
+index 9532ba5..e36dd1e 100644
+--- a/ui/src/components/AgentConfigForm.tsx
++++ b/ui/src/components/AgentConfigForm.tsx
+@@ -1173,6 +1173,21 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+         </div>
+       )}
+ 
++      {/* Create-only: gateway adapters (e.g. openclaw_gateway) are not "local", so
++          their ConfigFields are not rendered by the isLocal block above. Render a
++          minimal gateway config section so users can enter URL + token on create. */}
++      {isCreate && !isLocal && adapterType === "openclaw_gateway" && (
++        <div className={cn(!cards && "border-b border-border")}>
++          {cards
++            ? <h3 className="text-sm font-medium mb-3">Gateway configuration</h3>
++            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Gateway configuration</div>
++          }
++          <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
++            <uiAdapter.ConfigFields {...adapterFieldProps} />
++          </div>
++        </div>
++      )}
++
+       {/* ---- Run Policy ---- */}
+       {isCreate && showCreateRunPolicySection ? (
+         <div className={cn(!cards && "border-b border-border")}>
+diff --git a/ui/src/components/agent-config-defaults.ts b/ui/src/components/agent-config-defaults.ts
+index f8b39b6..d11ab2a 100644
+--- a/ui/src/components/agent-config-defaults.ts
++++ b/ui/src/components/agent-config-defaults.ts
+@@ -25,6 +25,8 @@ export const defaultCreateValues: CreateConfigValues = {
+   workspaceBranchTemplate: "",
+   worktreeParentDir: "",
+   runtimeServicesJson: "",
++  gatewayToken: "",
++  disableDeviceAuth: true,
+   maxTurnsPerRun: 1000,
+   heartbeatEnabled: false,
+   intervalSec: 300,

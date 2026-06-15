@@ -13,6 +13,17 @@ ARG PAPERCLIP_REF=v2026.609.0
 
 WORKDIR /paperclip
 RUN git clone --depth 1 --branch "${PAPERCLIP_REF}" "${PAPERCLIP_REPO}" .
+
+# Fork patch: enable creating openclaw_gateway agents directly from the "Add agent"
+# UI (un-hide the tile + render a create form with URL + token). Applied to SOURCE
+# before the build so it compiles into the UI bundle. Fail-closed: the build aborts
+# if the patch does not apply cleanly (e.g. after a future PAPERCLIP_REF bump) —
+# that hard error is the signal to re-generate the patch for the new ref.
+COPY openclaw-gateway-create.patch /tmp/openclaw-gateway-create.patch
+RUN git apply --check /tmp/openclaw-gateway-create.patch \
+ && git apply /tmp/openclaw-gateway-create.patch \
+ && echo "Applied openclaw-gateway-create.patch (UI tile create-flow)"
+
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @paperclipai/ui build
 RUN pnpm --filter @paperclipai/plugin-sdk build
